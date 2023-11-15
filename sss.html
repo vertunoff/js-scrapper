@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Скрапинг параграфов</title>
+</head>
+<body>
+    <h1>Скрапинг параграфов</h1>
+    <p>Нажмите кнопку, чтобы выполнить скрапинг и отобразить текст:</p>
+
+    <!-- Добавьте кнопку -->
+    <button id="scrapeButton">Выполнить скрапинг</button>
+
+    <!-- Добавьте текстовое поле для вывода результата -->
+    <textarea id="resultTextArea" rows="10" cols="50" readonly></textarea>
+    <script src="https://cdn.jsdelivr.net/npm/puppeteer@8.0.0"></script>
+
+    <script>
+        // Функция для выполнения скрапинга
+        async function scrapeParagraphs() {
+            document.getElementById('resultTextArea').value = ""
+            if (typeof puppeteer === 'undefined') {
+                document.getElementById('resultTextArea').value = "stage0"
+                console.error('Puppeteer не загружен. Пожалуйста, дождитесь загрузки и попробуйте еще раз.');
+                return;
+            }
+            const url = "https://rbc.ru/";
+
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+            document.getElementById('resultTextArea').value = "stage1"
+
+            await page.goto(url);
+            const links = await page.evaluate(() => {
+                const politicsLinks = [];
+                const linkElements = document.querySelectorAll('a');
+
+                for (const linkElement of linkElements) {
+                    const linkText = linkElement.textContent;
+                    const linkHref = linkElement.href;
+
+                    if (linkHref.includes('politics') && linkHref != 'https://www.rbc.ru/politics/' && linkHref !=  'https://www.rbc.ru/politics/?utm_source=topline') {
+                        politicsLinks.push({ title: linkText, url: linkHref });
+                    }
+                }
+
+                return politicsLinks;
+            });
+
+            const url2 = links[1].url;
+            console.log(url2);
+            await page.goto(url2);
+            const pageText = await page.evaluate(() => {
+                const paragraphElements = document.querySelectorAll('p');
+
+                let combinedText = '';
+
+                for (const paragraphElement of paragraphElements) {
+                    combinedText += paragraphElement.textContent + ' ';
+                }
+
+                return combinedText.trim();
+            });
+
+            // Выводим текст в текстовое поле
+            document.getElementById('resultTextArea').value = pageText;
+
+            await browser.close();
+        }
+        document.getElementById('resultTextArea').value = "asddasdas"
+
+        // Привязываем функцию к кнопке
+        document.getElementById('scrapeButton').addEventListener('click', scrapeParagraphs);
+    </script>
+</body>
+</html>
